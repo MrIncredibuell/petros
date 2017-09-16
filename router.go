@@ -49,6 +49,59 @@ type Route interface {
 	Match(string) bool
 	HandlerFunc() http.HandlerFunc
 }
+type exactMatchRoute struct {
+	pattern string
+	handler http.Handler
+}
+
+func (r *exactMatchRoute) Match(url string) bool {
+	if len(url) > 0 && url[len(url)-1] != '/' {
+		url += "/"
+	}
+	return url == r.pattern
+}
+
+func (r *exactMatchRoute) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	r.handler.ServeHTTP(w, req)
+}
+
+func (r *exactMatchRoute) HandlerFunc() http.HandlerFunc {
+	return r.ServeHTTP
+}
+
+func NewExactMatchRoute(pattern string, handler http.HandlerFunc) Route {
+	if len(pattern) == 0 || pattern[len(pattern)-1] != '/' {
+		pattern += "/"
+	}
+	return &exactMatchRoute{
+		pattern: pattern,
+		handler: handler,
+	}
+}
+
+type prefixRoute struct {
+	prefix  string
+	handler http.Handler
+}
+
+func (r *prefixRoute) Match(url string) bool {
+	return strings.HasPrefix(url, r.prefix)
+}
+
+func (r *prefixRoute) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	r.handler.ServeHTTP(w, req)
+}
+
+func (r *prefixRoute) HandlerFunc() http.HandlerFunc {
+	return r.ServeHTTP
+}
+
+func NewPrefixRoute(prefix string, handler http.HandlerFunc) Route {
+	return &prefixRoute{
+		prefix:  prefix,
+		handler: handler,
+	}
+}
 
 type paramRoute struct {
 	// pattern  string
@@ -65,7 +118,7 @@ func (r *paramRoute) Match(url string) bool {
 	args := make(map[string]string)
 
 	for i, segment := range urlSegments {
-		if len(r.segments[i]) > 1 && r.segments[i][0] == ':' {
+		if len(r.segments[i]) > 1 && r.segments[i][0] == ':' && len(segment) > 0 {
 			args[r.segments[i][1:]] = segment
 		} else if segment != r.segments[i] {
 			return false
@@ -93,6 +146,7 @@ func removeTrailingBlanks(segments []string) []string {
 	for len(segments) > 0 && segments[len(segments)-1] == "" {
 		segments = segments[:len(segments)-1]
 	}
+
 	return segments
 }
 
@@ -109,30 +163,6 @@ func NewParamRoute(pattern string, handler http.HandlerFunc) Route {
 	return &paramRoute{
 		segments: segments,
 		handler:  handler,
-	}
-}
-
-type prefixRoute struct {
-	prefix  string
-	handler http.Handler
-}
-
-func (r *prefixRoute) Match(url string) bool {
-	return strings.HasPrefix(url, r.prefix)
-}
-
-func (r *prefixRoute) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	r.handler.ServeHTTP(w, req)
-}
-
-func (r *prefixRoute) HandlerFunc() http.HandlerFunc {
-	return r.ServeHTTP
-}
-
-func NewPrefixRoute(prefix string, handler http.HandlerFunc) Route {
-	return &prefixRoute{
-		prefix:  prefix,
-		handler: handler,
 	}
 }
 

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/MrIncredibuell/petros/user"
 	"github.com/gorilla/securecookie"
-	"github.com/jlrbuellv/petros/user"
 )
 
 type Config struct {

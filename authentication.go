@@ -3,7 +3,7 @@ package petros
 import (
 	"net/http"
 
-	"github.com/jlrbuellv/petros/user"
+	"github.com/MrIncredibuell/petros/user"
 
 	"github.com/gorilla/securecookie"
 )

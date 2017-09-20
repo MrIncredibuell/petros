@@ -3,6 +3,7 @@ package petros
 import (
 	"net/http"
 	"strings"
+	"unicode"
 )
 
 type Router interface {
@@ -105,8 +106,9 @@ func NewPrefixRoute(prefix string, handler http.HandlerFunc) Route {
 
 type paramRoute struct {
 	// pattern  string
-	segments []string
-	handler  http.HandlerFunc
+	segments   []string
+	validators []func(string) bool
+	handler    http.HandlerFunc
 }
 
 func (r *paramRoute) Match(url string) bool {
@@ -117,8 +119,17 @@ func (r *paramRoute) Match(url string) bool {
 
 	args := make(map[string]string)
 
+	validatorIndex := 0
+
 	for i, segment := range urlSegments {
 		if len(r.segments[i]) > 1 && r.segments[i][0] == ':' && len(segment) > 0 {
+			if validatorIndex < len(r.validators) {
+				valid := r.validators[validatorIndex](segment)
+				if !valid {
+					return false
+				}
+				validatorIndex += 1
+			}
 			args[r.segments[i][1:]] = segment
 		} else if segment != r.segments[i] {
 			return false
@@ -158,12 +169,29 @@ func (r *paramRoute) HandlerFunc() http.HandlerFunc {
 	return r.ServeHTTP
 }
 
-func NewParamRoute(pattern string, handler http.HandlerFunc) Route {
+func NewParamRoute(pattern string, handler http.HandlerFunc, validators ...func(string) bool) Route {
 	segments := removeTrailingBlanks(strings.Split(pattern, "/"))
 	return &paramRoute{
-		segments: segments,
-		handler:  handler,
+		segments:   segments,
+		validators: validators,
+		handler:    handler,
 	}
+}
+
+func UUIDValidator(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i, r := range s {
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if r != '-' {
+				return false
+			}
+		} else if !(unicode.IsDigit(r) || r == 'a' || r == 'b' || r == 'c' || r == 'd' || r == 'e' || r == 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 func NewRouterWithStatic(staticPrefix string, staticDir string) Router {

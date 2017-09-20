@@ -21,7 +21,7 @@ func (r *router) AddRoute(route Route) {
 }
 
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := req.URL.String()
+	path := req.URL.Path
 	for _, route := range r.routes {
 		if route.Match(path) {
 			req = ParsedRequest(req)

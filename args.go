@@ -23,7 +23,7 @@ func ParsedRequest(req *http.Request) *http.Request {
 		return nil
 	}
 
-	req = req.WithContext(context.WithValue(req.Context(), "RequestArgs", args))
+	req = req.WithContext(context.WithValue(req.Context(), requestArgsKey, args))
 	return req
 }
 
@@ -32,7 +32,7 @@ func Args(req *http.Request) (*RequestArgs, error) {
 		return nil, errors.New("Cannot get args for a nil request")
 	}
 
-	if value, ok := req.Context().Value("RequestArgs").(*RequestArgs); value != nil && ok {
+	if value, ok := req.Context().Value(requestArgsKey).(*RequestArgs); value != nil && ok {
 		return value, nil
 	}
 

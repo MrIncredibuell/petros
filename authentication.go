@@ -27,7 +27,7 @@ func (s *Server) Authenticated(f func(http.ResponseWriter, *http.Request)) func(
 }
 
 func (s *Server) GetUser(req *http.Request) *user.User {
-	if u := req.Context().Value("CurrentUser"); u != nil {
+	if u := req.Context().Value(currentUserKey); u != nil {
 		return u.(*user.User)
 	}
 
@@ -35,7 +35,7 @@ func (s *Server) GetUser(req *http.Request) *user.User {
 		value := make(map[string]string)
 		if err = s.Config.AuthenticationSettings.secureCookie.Decode(s.Config.AuthenticationSettings.CookieName, cookie.Value, &value); err == nil {
 			return s.UserStore.GetUser("Id", value["id"])
-			// req.Context = context.WithValue(req.Context, "CurrentUser", u)
+			// req.Context = context.WithValue(req.Context, currentUserKey, u)
 		}
 	}
 
